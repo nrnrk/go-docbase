@@ -42,7 +42,7 @@ func (c *client) CreatePost(ctx context.Context, req *CreatePostRequest) (*Post,
 		return nil, fmt.Errorf("Failed to send http reqeust: %w", err)
 	}
 	defer res.Body.Close()
-	if res.StatusCode >= 300 {
+	if res.StatusCode >= 400 {
 		body, err := ioutil.ReadAll(res.Body)
 		if err != nil {
 			return nil, fmt.Errorf("Got error from docbase server: %s", res.Status)
