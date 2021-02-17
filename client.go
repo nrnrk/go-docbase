@@ -14,6 +14,7 @@ type (
 		CreatePost(ctx context.Context, req *CreatePostRequest) (*Post, error)
 		UpdatePost(ctx context.Context, req *UpdatePostRequest) (*Post, error)
 		GetPost(ctx context.Context, id uint) (*Post, error)
+		ListTags(ctx context.Context) ([]*Tag, error)
 	}
 
 	client struct {
@@ -39,55 +40,10 @@ func (c *client) CreatePost(ctx context.Context, req *CreatePostRequest) (*Post,
 		return nil, fmt.Errorf("Failed to create http reqeust: %w", err)
 	}
 
-	post, err := c.executeAPI(httpReq)
-	if err != nil {
-		return nil, fmt.Errorf("DocBase API error: %w", err)
-	}
-
-	return post, nil
-}
-
-func (c *client) UpdatePost(ctx context.Context, req *UpdatePostRequest) (*Post, error) {
-	httpReq, err := c.createUpdateRequest(ctx, req)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to create http reqeust: %w", err)
-	}
-
-	post, err := c.executeAPI(httpReq)
-	if err != nil {
-		return nil, fmt.Errorf("DocBase API error: %w", err)
-	}
-
-	return post, nil
-}
-
-func (c *client) GetPost(ctx context.Context, id uint) (*Post, error) {
-	httpReq, err := c.createGetRequest(ctx, id)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to create http reqeust: %w", err)
-	}
-
-	post, err := c.executeAPI(httpReq)
-	if err != nil {
-		return nil, fmt.Errorf("DocBase API error: %w", err)
-	}
-
-	return post, nil
-}
-
-func (c *client) executeAPI(httpReq *http.Request) (*Post, error) {
-	res, err := c.httpClient.Do(httpReq)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to send http reqeust: %w", err)
-	}
+	res, err := c.executeAPI(httpReq)
 	defer res.Body.Close()
-	if res.StatusCode >= 400 {
-		body, err := ioutil.ReadAll(res.Body)
-		if err != nil {
-			return nil, fmt.Errorf("Got error from docbase server: %s", res.Status)
-		}
-
-		return nil, fmt.Errorf("Got error from docbase server: %s, body: %s", res.Status, body)
+	if err != nil {
+		return nil, fmt.Errorf("DocBase API error: %w", err)
 	}
 
 	var post *Post
@@ -101,6 +57,98 @@ func (c *client) executeAPI(httpReq *http.Request) (*Post, error) {
 	}
 
 	return post, nil
+}
+
+func (c *client) UpdatePost(ctx context.Context, req *UpdatePostRequest) (*Post, error) {
+	httpReq, err := c.updatePostRequest(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to create http reqeust: %w", err)
+	}
+
+	res, err := c.executeAPI(httpReq)
+	defer res.Body.Close()
+	if err != nil {
+		return nil, fmt.Errorf("DocBase API error: %w", err)
+	}
+
+	var post *Post
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to read body: %w", err)
+	}
+	err = json.Unmarshal(body, &post)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to unmarshal body to json: %w", err)
+	}
+
+	return post, nil
+}
+
+func (c *client) GetPost(ctx context.Context, id uint) (*Post, error) {
+	httpReq, err := c.createGetRequest(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to create http reqeust: %w", err)
+	}
+
+	res, err := c.executeAPI(httpReq)
+	defer res.Body.Close()
+	if err != nil {
+		return nil, fmt.Errorf("DocBase API error: %w", err)
+	}
+
+	var post *Post
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to read body: %w", err)
+	}
+	err = json.Unmarshal(body, &post)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to unmarshal body to json: %w", err)
+	}
+
+	return post, nil
+}
+
+func (c *client) ListTags(ctx context.Context) ([]*Tag, error) {
+	httpReq, err := c.createListTagsRequest(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to create http reqeust: %w", err)
+	}
+
+	res, err := c.executeAPI(httpReq)
+	defer res.Body.Close()
+	if err != nil {
+		return nil, fmt.Errorf("DocBase API error: %w", err)
+	}
+
+	var tags []*Tag
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to read body: %w", err)
+	}
+	err = json.Unmarshal(body, &tags)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to unmarshal body to json: %w", err)
+	}
+
+	return tags, nil
+}
+
+func (c *client) executeAPI(httpReq *http.Request) (*http.Response, error) {
+	res, err := c.httpClient.Do(httpReq)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to send http reqeust: %w", err)
+	}
+	if res.StatusCode >= 400 {
+		body, err := ioutil.ReadAll(res.Body)
+		if err != nil {
+			return nil, fmt.Errorf("Got error from docbase server: %s", res.Status)
+		}
+
+		return nil, fmt.Errorf("Got error from docbase server: %s, body: %s", res.Status, body)
+	}
+
+	return res, nil
 }
 
 func (c *client) createPostRequest(ctx context.Context, req *CreatePostRequest) (*http.Request, error) {
@@ -124,7 +172,7 @@ func (c *client) createPostRequest(ctx context.Context, req *CreatePostRequest) 
 	return httpReq, nil
 }
 
-func (c *client) createUpdateRequest(ctx context.Context, req *UpdatePostRequest) (*http.Request, error) {
+func (c *client) updatePostRequest(ctx context.Context, req *UpdatePostRequest) (*http.Request, error) {
 	jsonReq, err := json.Marshal(req)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to marshal request to json: %w", err)
@@ -150,6 +198,21 @@ func (c *client) createGetRequest(ctx context.Context, id uint) (*http.Request, 
 		ctx,
 		`GET`,
 		fmt.Sprintf("https://api.docbase.io/teams/%s/posts/%d", c.team, id),
+		nil,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to create request: %w", err)
+	}
+
+	httpReq.Header.Add(`X-DocBaseToken`, c.token)
+	return httpReq, nil
+}
+
+func (c *client) createListTagsRequest(ctx context.Context) (*http.Request, error) {
+	httpReq, err := http.NewRequestWithContext(
+		ctx,
+		`GET`,
+		fmt.Sprintf("https://api.docbase.io/teams/%s/tags", c.team),
 		nil,
 	)
 	if err != nil {
