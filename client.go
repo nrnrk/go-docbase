@@ -133,7 +133,7 @@ func (c *client) createUpdateRequest(ctx context.Context, req *UpdatePostRequest
 	httpReq, err := http.NewRequestWithContext(
 		ctx,
 		`PATCH`,
-		fmt.Sprintf("https://api.docbase.io/teams/%s/posts", c.team),
+		fmt.Sprintf("https://api.docbase.io/teams/%s/posts/%d", c.team, req.ID),
 		bytes.NewReader(jsonReq),
 	)
 	if err != nil {

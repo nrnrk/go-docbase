@@ -29,6 +29,7 @@ func (r *CreatePostRequest) Validate() error {
 }
 
 type UpdatePostRequest struct {
+	ID     uint
 	Title  string   `json:"title,omitempty"`
 	Body   string   `json:"body,omitempty"`
 	Draft  bool     `json:"draft,omitempty"`
@@ -41,6 +42,9 @@ type UpdatePostRequest struct {
 func (r *UpdatePostRequest) Validate() error {
 	if r == nil {
 		return errors.New(`UpdatePostRequest must be set`)
+	}
+	if r.ID == 0 {
+		return errors.New(`ID must be specified`)
 	}
 	if r.Scope == ScopeGroup && len(r.Groups) == 0 {
 		return errors.New(`Group must be specified when the scope is group`)
