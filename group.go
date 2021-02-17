@@ -1,4 +1,6 @@
 package docbase
 
-// FIXME: implement
-type Group struct {}
+type Group struct {
+	ID   uint   `json:"id"`
+	Name string `json:"name"`
+}

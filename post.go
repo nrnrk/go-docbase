@@ -6,13 +6,13 @@ import (
 )
 
 type CreatePostRequest struct {
-	Title  string  `json:"title"`
-	Body   string  `json:"body"`
-	Draft  bool    `json:"draft"`
-	Scope  Scope   `json:"scope"`
-	Tags   []Tag   `json:"tags,omitempty"`
-	Groups []Group `json:"groups,omitempty"`
-	Notice bool    `json:"notice"`
+	Title  string   `json:"title"`
+	Body   string   `json:"body"`
+	Draft  bool     `json:"draft"`
+	Scope  Scope    `json:"scope"`
+	Tags   []string `json:"tags,omitempty"`
+	Groups []uint   `json:"groups,omitempty"`
+	Notice bool     `json:"notice"`
 }
 
 func (r *CreatePostRequest) Validate() error {
@@ -57,8 +57,18 @@ type Tag struct {
 	Name string `json:"name"`
 }
 
-// FIXME: implement
-type Comment struct{}
+type Comment struct {
+	ID        string    `json:"id"`
+	Body      string    `json:"body"`
+	CreatedAt time.Time `json:"created_at"`
+	User      User      `json:"user"`
+}
 
-// FIXME: implement
-type Attachment struct{}
+type Attachment struct {
+	ID        string    `json:"id"`
+	Name      string    `json:"name"`
+	Size      uint      `json:"size"`
+	URL       string    `json:"url"`
+	Markdown  string    `json:"markdown"`
+	CreatedAt time.Time `json:"created_at"`
+}
